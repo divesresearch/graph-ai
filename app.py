@@ -25,6 +25,8 @@ if user_input:
             protocol += message
             prev_text = data["message"]
 
+    st.text(protocol)
+
     schema = SCHEMAS[protocol]
 
     chatbot = Chatbot(config={
@@ -40,9 +42,14 @@ if user_input:
             response += message
             prev_text = data["message"]
 
+    st.text(response[:100])
+
     with st.spinner(text='Sending the request...'):
         results = post_query(URLS[protocol], response.strip('```'))
-        for key, value in results['data'].items():
-            df = pd.DataFrame(parse_results(value))
+        if 'data' in results:
+            for key, value in results['data'].items():
+                df = pd.DataFrame(parse_results(value))
+        else:
+            st.text(results)
 
     st.dataframe(df)
