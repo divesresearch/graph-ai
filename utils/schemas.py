@@ -337,5 +337,500 @@ type DexAmmProtocol implements Protocol @entity {
   " This is a boolean to indicate whether or not the pools have been instantiated the were initialized before Optimism regenesis "
   _regenesis: Boolean!
 }
-'''
+''',
+    'balancer': '''type Balancer @entity {
+    id: ID!
+    color: String!                                      # Bronze, Silver, Gold
+    poolCount: Int!                                     # Number of pools
+    finalizedPoolCount: Int!                            # Number of finalized pools
+    crpCount: Int!                                      # Number of CRP
+    pools: [Pool!] @derivedFrom(field: "factoryID")
+    txCount: BigInt!                                    # Number of txs
+    totalLiquidity: BigDecimal!                         # All the pools liquidity value in USD
+    totalSwapVolume: BigDecimal!                        # All the swap volume in USD
+    totalSwapFee: BigDecimal!                           # All the swap fee in USD
+}
+
+type Pool @entity {
+    id: ID!                                             # Pool address
+    controller: Bytes!                                  # Controller address
+    publicSwap: Boolean!                                # isPublicSwap
+    finalized: Boolean!                                 # isFinalized
+    crp: Boolean!                                       # Is configurable rights pool
+    crpController: Bytes                                # CRP controller address
+    symbol: String                                      # Pool token symbol
+    name: String                                        # Pool token name
+    rights: [String!]!                                  # List of rights (for CRP)
+    cap: BigInt                                         # Maximum supply if any (for CRP)
+    active: Boolean!                                    # isActive
+    swapFee: BigDecimal!                                # Swap Fees
+    totalWeight: BigDecimal!
+    totalShares: BigDecimal!                            # Total pool token shares
+    totalSwapVolume: BigDecimal!                        # Total swap volume in USD
+    totalSwapFee: BigDecimal!                           # Total swap fee in USD
+    liquidity: BigDecimal!                              # Pool liquidity value in USD
+    tokensList: [Bytes!]!                               # Temp workaround until graph supports filtering on derived field
+    tokens: [PoolToken!] @derivedFrom(field: "poolId")
+    shares: [PoolShare!] @derivedFrom(field: "poolId")
+    createTime: Int!                                    # Block time pool was created
+    tokensCount: BigInt!                                # Number of tokens in the pool
+    holdersCount: BigInt!                               # Number of addresses holding a positive balance of BPT
+    joinsCount: BigInt!                                 # liquidity has been added
+    exitsCount: BigInt!                                 # liquidity has been removed
+    swapsCount: BigInt!
+    factoryID: Balancer!
+    tx: Bytes                                           # Pool creation transaction id
+    swaps: [Swap!] @derivedFrom(field: "poolAddress")
+}
+
+type PoolToken @entity {
+    id: ID!                                             # poolId + token address
+    poolId: Pool!
+    symbol: String
+    name: String
+    decimals: Int!
+    address: String!
+    balance: BigDecimal!
+    denormWeight: BigDecimal!
+}
+
+type PoolShare @entity {
+    id: ID!                                             # poolId + userAddress
+    userAddress: User!
+    poolId: Pool!
+    balance: BigDecimal!
+}
+
+type User @entity {
+    id: ID!
+    sharesOwned: [PoolShare!]  @derivedFrom(field: "userAddress")
+    txs: [Transaction!]  @derivedFrom(field: "userAddress")
+    swaps: [Swap!]  @derivedFrom(field: "userAddress")
+}
+
+type Swap @entity {
+    id: ID!                                 #
+    caller: Bytes!                          #
+    tokenIn: Bytes!                         #
+    tokenInSym: String!                     #
+    tokenOut: Bytes!                        #
+    tokenOutSym: String!                    #
+    tokenAmountIn: BigDecimal!              #
+    tokenAmountOut: BigDecimal!             #
+    poolAddress: Pool
+    userAddress: User                       # User address that initiates the swap
+    value: BigDecimal!                      # Swap value in USD
+    feeValue: BigDecimal!                   # Swap fee value in USD
+    poolTotalSwapVolume: BigDecimal!        # Total pool swap volume in USD
+    poolTotalSwapFee: BigDecimal!           # Total pool swap fee in USD
+    poolLiquidity: BigDecimal!              # Pool liquidity value in USD
+    timestamp: Int!
+}
+
+type Transaction @entity {
+    id: ID!                         # Log ID
+    tx: Bytes!
+    event: String
+    block: Int!
+    timestamp: Int!
+    gasUsed: BigDecimal!
+    gasPrice: BigDecimal!
+    poolAddress: Pool
+    userAddress: User
+    action: SwapType
+    sender: Bytes
+}
+
+type TokenPrice @entity {
+    id: ID!
+    symbol: String
+    name: String
+    decimals: Int!
+    price: BigDecimal!
+    poolLiquidity: BigDecimal!
+    poolTokenId: String
+}
+
+enum SwapType {
+    swapExactAmountIn,
+    swapExactAmountOut,
+    joinswapExternAmountIn,
+    joinswapPoolAmountOut,
+    exitswapPoolAmountIn,
+    exitswapExternAmountOut
+}''',
+    'usdc': '''user(
+id: ID!
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): User
+users(
+skip: Int = 0
+first: Int = 100
+orderBy: User_orderBy
+orderDirection: OrderDirection
+where: User_filter
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): [User!]!
+minter(
+id: ID!
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): Minter
+minters(
+skip: Int = 0
+first: Int = 100
+orderBy: Minter_orderBy
+orderDirection: OrderDirection
+where: Minter_filter
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): [Minter!]!
+userCounter(
+id: ID!
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): UserCounter
+userCounters(
+skip: Int = 0
+first: Int = 100
+orderBy: UserCounter_orderBy
+orderDirection: OrderDirection
+where: UserCounter_filter
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): [UserCounter!]!
+minterCounter(
+id: ID!
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): MinterCounter
+minterCounters(
+skip: Int = 0
+first: Int = 100
+orderBy: MinterCounter_orderBy
+orderDirection: OrderDirection
+where: MinterCounter_filter
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): [MinterCounter!]!
+transferCounter(
+id: ID!
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): TransferCounter
+transferCounters(
+skip: Int = 0
+first: Int = 100
+orderBy: TransferCounter_orderBy
+orderDirection: OrderDirection
+where: TransferCounter_filter
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): [TransferCounter!]!
+totalSupply(
+id: ID!
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): TotalSupply
+totalSupplies(
+skip: Int = 0
+first: Int = 100
+orderBy: TotalSupply_orderBy
+orderDirection: OrderDirection
+where: TotalSupply_filter
+block: Block_height
+subgraphError: _SubgraphErrorPolicy_! = deny
+): [TotalSupply!]!''',
+    'decentraland': '''# thegraph doesn't support count operations, but we need them to paginate results
+# This entity is a workaround to this issue, but it's still not enough, as we'd need counts for more complex queries
+type Count @entity {
+  id: ID!
+
+  orderTotal: Int!
+  orderParcel: Int!
+  orderEstate: Int!
+  orderWearable: Int!
+  orderENS: Int!
+  parcelTotal: Int!
+  estateTotal: Int!
+  wearableTotal: Int!
+  ensTotal: Int!
+  started: Int!
+  salesTotal: Int!
+  salesManaTotal: BigInt!
+  creatorEarningsManaTotal: BigInt!
+  daoEarningsManaTotal: BigInt!
+}
+
+# ---------------------------------------------------------
+# Orders --------------------------------------------------
+# ---------------------------------------------------------
+
+# thegraph doesn't support nested property searches, so we're doing promoting properties
+# we need from each NFT type to the Order, in order to search for them, prefixing them with search_[nft]_[prop]
+type Order @entity {
+  id: ID!
+  marketplaceAddress: Bytes!
+  category: Category!
+  nft: NFT
+  nftAddress: Bytes!
+  tokenId: BigInt!
+  txHash: Bytes!
+  owner: Bytes!
+  buyer: Bytes
+  price: BigInt!
+  status: OrderStatus!
+  blockNumber: BigInt!
+  expiresAt: BigInt!
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+# ---------------------------------------------------------
+# Bids ----------------------------------------------------
+# ---------------------------------------------------------
+
+type Bid @entity {
+  id: ID!
+  bidAddress: Bytes!
+  category: Category!
+  nft: NFT
+  nftAddress: Bytes!
+  tokenId: BigInt!
+  bidder: Bytes
+  seller: Bytes
+  price: BigInt!
+  fingerprint: Bytes
+  status: OrderStatus!
+  blockchainId: String!
+  blockNumber: BigInt!
+  expiresAt: BigInt!
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+# ---------------------------------------------------------
+# NFTs ----------------------------------------------------
+# ---------------------------------------------------------
+
+# aka LAND
+type Parcel @entity {
+  id: ID!
+  tokenId: BigInt!
+  owner: Account!
+  x: BigInt!
+  y: BigInt!
+  estate: Estate
+  data: Data
+  rawData: String
+  nft: NFT @derivedFrom(field: "parcel")
+}
+
+type Estate @entity {
+  id: ID!
+  tokenId: BigInt!
+  owner: Account!
+  parcels: [Parcel!]! @derivedFrom(field: "estate")
+  parcelDistances: [Int!]
+  adjacentToRoadCount: Int
+  size: Int
+  data: Data
+  rawData: String
+  nft: NFT @derivedFrom(field: "estate")
+}
+
+type Data @entity {
+  id: ID!
+  parcel: Parcel
+  estate: Estate
+  version: String!
+  name: String
+  description: String
+  ipns: String
+}
+
+type Wearable @entity {
+  id: ID!
+  owner: Account!
+  representationId: String!
+  collection: String!
+  name: String!
+  description: String!
+  category: WearableCategory!
+  rarity: WearableRarity!
+  bodyShapes: [WearableBodyShape!]
+  nft: NFT @derivedFrom(field: "wearable")
+}
+
+type ENS @entity {
+  id: ID!
+  tokenId: BigInt!
+  owner: Account!
+  caller: Bytes
+  beneficiary: Bytes
+  labelHash: Bytes
+  subdomain: String
+  createdAt: BigInt
+  nft: NFT @derivedFrom(field: "ens")
+}
+
+type NFT @entity {
+  id: ID!
+  tokenId: BigInt!
+  contractAddress: Bytes!
+  category: Category!
+  owner: Account!
+  tokenURI: String
+
+  orders: [Order!] @derivedFrom(field: "nft") # History of all orders. Should only ever be ONE open order. all others must be cancelled or sold
+  bids: [Bid!] @derivedFrom(field: "nft") # History of all bids.
+  activeOrder: Order
+
+  name: String
+  image: String
+
+  parcel: Parcel
+  estate: Estate
+  wearable: Wearable
+  ens: ENS
+
+  createdAt: BigInt!
+  updatedAt: BigInt!
+  soldAt: BigInt
+  transferredAt: BigInt!
+
+  # analytics
+  sales: Int!
+  volume: BigInt!
+
+  # search indexes
+  searchOrderStatus: OrderStatus
+  searchOrderPrice: BigInt
+  searchOrderExpiresAt: BigInt
+  searchOrderCreatedAt: BigInt
+
+  searchIsLand: Boolean
+
+  searchText: String
+
+  searchParcelIsInBounds: Boolean
+  searchParcelX: BigInt
+  searchParcelY: BigInt
+  searchParcelEstateId: String
+  searchDistanceToPlaza: Int
+  searchAdjacentToRoad: Boolean
+
+  searchEstateSize: Int
+
+  searchIsWearableHead: Boolean
+  searchIsWearableAccessory: Boolean
+  searchWearableRarity: String # We're using String instead of WearableRarity here so we can later query this field via ()_in
+  searchWearableCategory: WearableCategory
+  searchWearableBodyShapes: [WearableBodyShape!]
+}
+
+# ---------------------------------------------------------
+# Account (user) -------------------------------------------
+# ---------------------------------------------------------
+
+type Account @entity {
+  id: ID! # ETH addr
+  address: Bytes!
+  nfts: [NFT!] @derivedFrom(field: "owner")
+  # analytics
+  sales: Int!
+  purchases: Int!
+  spent: BigInt!
+  earned: BigInt!
+}
+
+# ---------------------------------------------------------
+# Enums ---------------------------------------------------
+# ---------------------------------------------------------
+
+enum Category @entity {
+  parcel
+  estate
+  wearable
+  ens
+}
+
+enum OrderStatus @entity {
+  open
+  sold
+  cancelled
+}
+
+enum WearableCategory @entity {
+  eyebrows
+  eyes
+  facial_hair
+  hair
+  mouth
+  upper_body
+  lower_body
+  feet
+  earring
+  eyewear
+  hat
+  helmet
+  mask
+  tiara
+  top_head
+  skin
+}
+
+enum WearableRarity @entity {
+  common
+  uncommon
+  rare
+  epic
+  legendary
+  mythic
+  unique
+}
+
+enum WearableBodyShape @entity {
+  BaseFemale
+  BaseMale
+}
+
+# ---------------------------------------------------------
+# Sales ---------------------------------------------------
+# ---------------------------------------------------------
+
+# We only track sales from Decentraland's smart contracts
+
+enum SaleType @entity {
+  bid
+  order
+}
+
+type Sale @entity {
+  id: ID!
+  type: SaleType!
+  buyer: Bytes!
+  seller: Bytes!
+  price: BigInt!
+  nft: NFT!
+  timestamp: BigInt!
+  txHash: Bytes!
+
+  # search
+  searchTokenId: BigInt!
+  searchContractAddress: Bytes!
+  searchCategory: String!
+}
+
+# Data accumulated and condensed into day stats for all of the Marketplace activity
+type AnalyticsDayData @entity {
+  id: ID! # timestamp rounded to current day by dividing by 86400
+  date: Int!
+  sales: Int!
+  volume: BigInt!
+  creatorsEarnings: BigInt!
+  daoEarnings: BigInt!
+}''',
 }

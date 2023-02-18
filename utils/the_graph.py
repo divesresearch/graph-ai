@@ -3,10 +3,8 @@ from flatten_json import flatten
 
 def post_query(url, query):
     response = requests.post(url, '', json={'query':query})
-    if response.status_code == 200 and 'data' in response.json():
+    if response.status_code == 200:
         return response.json()
-    else:
-        print(response.json())
 
 def parse_results(results):
     new_results = []

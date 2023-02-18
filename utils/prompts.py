@@ -6,6 +6,9 @@ Here is the request: %s
 
 The decentralized application will be from one of the following options:
 uniswap
+balancer
+usdc
+decentraland
 opensea
 aave
 
