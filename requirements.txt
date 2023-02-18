@@ -1,0 +1,5 @@
+streamlit
+
+revChatGPT
+pandas
+flatten_json
