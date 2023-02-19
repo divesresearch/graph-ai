@@ -22,21 +22,23 @@ def increment_counter():
 def reset_increment():
     st.session_state.count = 0
 
-examples = st.radio("Example Prompts:", [
-    'show last 1000 swaps of this account on Uniswap: 0x3a8713065e4daa9603b91ef35d6a8336ef7b26c6',
-    'show me the latest 50 flashloans on aave.',
-    'show the price of the 10 latest sales on decentraland.',
-    'I want to write myself'
-], index=3)
+col1, col2 = st.columns([4,6])
+with col1:
+    examples = st.radio("Example Prompts:", [
+        'show last 1000 swaps of this account on Uniswap: 0x3a8713065e4daa9603b91ef35d6a8336ef7b26c6',
+        'show me the latest 50 flashloans on aave.',
+        'show the price of the 10 latest sales on decentraland.',
+        'I want to write myself'
+    ], index=3)
 
-if examples ==  'I want to write myself':
-    input_example = ""
-else:
-    input_example = examples
-
-with st.form(key='query_form'):
-    user_input = st.text_input("What do you want?", input_example)
-    submit_button_1 = st.form_submit_button(label='Submit', on_click=reset_increment)
+    if examples ==  'I want to write myself':
+        input_example = ""
+    else:
+        input_example = examples
+with col2:
+    with st.form(key='query_form'):
+        user_input = st.text_input("What do you want?", input_example)
+        submit_button_1 = st.form_submit_button(label='Submit', on_click=reset_increment)
 
 if st.session_state.count != 0 or (user_input and submit_button_1):
     if st.session_state.count == 0:
