@@ -25,7 +25,7 @@ def reset_increment():
     st.session_state.count = 0
 
 examples = st.radio("Example Prompts:", [
-    'show last 5 deposit on Uniswap',
+    'show last 1000 swaps of this account on Uniswap: 0x3a8713065e4daa9603b91ef35d6a8336ef7b26c6',
     'show me the latest 50 flashloans on aave.',
     'show the price of the 10 latest sales on decentraland.',
     'I want to write myself'
@@ -97,10 +97,15 @@ if st.session_state.count != 0 or (user_input and submit_button_1):
         columns = b.multiselect('Select the columns for your plot:', st.session_state.df.columns)
         submit_button_2 = st.form_submit_button(label='Submit',on_click=increment_counter)
 
+
+    if columns[0].lower() == 'timestamp':
+        st.session_state.df[columns[0]] = pd.to_datetime(st.session_state.df[columns[0]], unit='s')
+    display_df = st.session_state.df.set_index(columns[0])
+    display_df = display_df[columns[1:]]
+    for col in display_df.columns:
+        display_df[col] = display_df[col].astype(float)
     if chart_type == 'Line chart' and submit_button_2:
-        if columns[0].lower == 'timestamp':
-            st.session_state.df[columns[0]] = pd.to_datetime(st.session_state.df[columns[0]])
-        st.line_chart(st.session_state.df, x=columns[0], y=columns[1:])
+        st.line_chart(display_df)
 
     if chart_type == 'Bar chart' and submit_button_2:
-        st.bar_chart(st.session_state.df, x=columns[0], y=columns[1])
+        st.bar_chart(display_df)
