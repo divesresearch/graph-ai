@@ -25,7 +25,7 @@ if user_input:
             protocol += message
             prev_text = data["message"]
 
-    st.text(protocol)
+    st.text(protocol.lower())
 
     schema = SCHEMAS[protocol]
 
@@ -43,9 +43,10 @@ if user_input:
             prev_text = data["message"]
 
     st.text(response[:100])
+    query = response[response.find('{'), response.rfind('}')]
 
     with st.spinner(text='Sending the request...'):
-        results = post_query(URLS[protocol], response.strip('```'))
+        results = post_query(URLS[protocol], query)
         if 'data' in results:
             for key, value in results['data'].items():
                 df = pd.DataFrame(parse_results(value))
