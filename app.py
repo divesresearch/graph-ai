@@ -1,6 +1,7 @@
 import streamlit as st
 from revChatGPT.V1 import Chatbot
 import pandas as pd
+import string
 from utils.the_graph import post_query, parse_results
 from utils.prompts import protocol_selection_prompt, query_prompt
 from utils.urls import URLS
@@ -25,6 +26,8 @@ if user_input:
             protocol += message
             prev_text = data["message"]
 
+    for char in string.punctuation:
+        protocol = protocol.replace(char, '')
     st.text(protocol.lower())
 
     schema = SCHEMAS[protocol]
@@ -42,8 +45,9 @@ if user_input:
             response += message
             prev_text = data["message"]
 
-    st.text(response[:100])
-    query = response[response.find('{'), response.rfind('}')]
+    st.text(response)
+    query = response[response.find('{'): response.rfind('}') + 1]
+    st.text(query)
 
     with st.spinner(text='Sending the request...'):
         results = post_query(URLS[protocol], query)
