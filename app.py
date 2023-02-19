@@ -10,7 +10,9 @@ from utils.schemas import SCHEMAS
 st.set_page_config(layout="wide")
 access_token = st.secrets['chatbot']['TOKEN']
 
-user_input = st.text_input("What do you want?")
+with st.form(key='query_form'):
+    user_input = st.text_input("What do you want?")
+    submit_button = st.form_submit_button(label='Submit')
 
 if user_input:
     chatbot = Chatbot(config={
@@ -28,7 +30,7 @@ if user_input:
 
     for char in string.punctuation:
         protocol = protocol.replace(char, '')
-    st.text(protocol.lower())
+    protocol = protocol.lower()
 
     schema = SCHEMAS[protocol]
 
@@ -45,9 +47,9 @@ if user_input:
             response += message
             prev_text = data["message"]
 
-    st.text(response)
     query = response[response.find('{'): response.rfind('}') + 1]
-    st.text(query)
+    with st.expander(':scroll: Query'):
+        st.text(query)
 
     with st.spinner(text='Sending the request...'):
         results = post_query(URLS[protocol], query)
@@ -57,4 +59,12 @@ if user_input:
         else:
             st.text(results)
 
-    st.dataframe(df)
+    with st.expander(':scroll: Dataframe', expanded=True):
+        st.dataframe(df)
+
+    with st.form(key='chart_form'):
+        a, b, c = st.columns([4, 5, 5])
+        chart_types = ['Line chart', 'Bar chart', 'Pie chart']
+        chart_type = a.radio('Select one of the following chart types:', chart_types)
+        columns = b.multiselect('Select the columns for your plot:', df.columns)
+        submit_button = st.form_submit_button(label='Submit')
