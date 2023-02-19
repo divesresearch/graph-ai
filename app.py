@@ -16,8 +16,6 @@ if 'count' not in st.session_state:
 if 'df' not in st.session_state:
     st.session_state.df = pd.DataFrame()
 
-st.write('Count = ', st.session_state.count)
-
 def increment_counter():
     st.session_state.count += 1
 
@@ -97,15 +95,15 @@ if st.session_state.count != 0 or (user_input and submit_button_1):
         columns = b.multiselect('Select the columns for your plot:', st.session_state.df.columns)
         submit_button_2 = st.form_submit_button(label='Submit',on_click=increment_counter)
 
+    if submit_button_2:
+        if columns[0].lower() == 'timestamp':
+            st.session_state.df[columns[0]] = pd.to_datetime(st.session_state.df[columns[0]], unit='s')
+        display_df = st.session_state.df.set_index(columns[0])
+        display_df = display_df[columns[1:]]
+        for col in display_df.columns:
+            display_df[col] = display_df[col].astype(float)
+        if chart_type == 'Line chart':
+            st.line_chart(display_df)
 
-    if columns[0].lower() == 'timestamp':
-        st.session_state.df[columns[0]] = pd.to_datetime(st.session_state.df[columns[0]], unit='s')
-    display_df = st.session_state.df.set_index(columns[0])
-    display_df = display_df[columns[1:]]
-    for col in display_df.columns:
-        display_df[col] = display_df[col].astype(float)
-    if chart_type == 'Line chart' and submit_button_2:
-        st.line_chart(display_df)
-
-    if chart_type == 'Bar chart' and submit_button_2:
-        st.bar_chart(display_df)
+        if chart_type == 'Bar chart':
+            st.bar_chart(display_df)
