@@ -459,90 +459,6 @@ enum SwapType {
     exitswapPoolAmountIn,
     exitswapExternAmountOut
 }''',
-    'usdc': '''user(
-id: ID!
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): User
-users(
-skip: Int = 0
-first: Int = 100
-orderBy: User_orderBy
-orderDirection: OrderDirection
-where: User_filter
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): [User!]!
-minter(
-id: ID!
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): Minter
-minters(
-skip: Int = 0
-first: Int = 100
-orderBy: Minter_orderBy
-orderDirection: OrderDirection
-where: Minter_filter
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): [Minter!]!
-userCounter(
-id: ID!
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): UserCounter
-userCounters(
-skip: Int = 0
-first: Int = 100
-orderBy: UserCounter_orderBy
-orderDirection: OrderDirection
-where: UserCounter_filter
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): [UserCounter!]!
-minterCounter(
-id: ID!
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): MinterCounter
-minterCounters(
-skip: Int = 0
-first: Int = 100
-orderBy: MinterCounter_orderBy
-orderDirection: OrderDirection
-where: MinterCounter_filter
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): [MinterCounter!]!
-transferCounter(
-id: ID!
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): TransferCounter
-transferCounters(
-skip: Int = 0
-first: Int = 100
-orderBy: TransferCounter_orderBy
-orderDirection: OrderDirection
-where: TransferCounter_filter
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): [TransferCounter!]!
-totalSupply(
-id: ID!
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): TotalSupply
-totalSupplies(
-skip: Int = 0
-first: Int = 100
-orderBy: TotalSupply_orderBy
-orderDirection: OrderDirection
-where: TotalSupply_filter
-block: Block_height
-subgraphError: _SubgraphErrorPolicy_! = deny
-): [TotalSupply!]!''',
     'decentraland': '''# thegraph doesn't support count operations, but we need them to paginate results
 # This entity is a workaround to this issue, but it's still not enough, as we'd need counts for more complex queries
 type Count @entity {
@@ -833,4 +749,210 @@ type AnalyticsDayData @entity {
   creatorsEarnings: BigInt!
   daoEarnings: BigInt!
 }''',
+    'aave' : '''type Protocol @entity {
+  # just 1 for now
+  id: ID!
+  pools: [Pool!]! @derivedFrom(field: "protocol")
+}
+
+# service entity, when we receiving an event we should wknow which pool is it
+type ContractToPoolMapping @entity {
+  # contract address
+  id: ID!
+  pool: Pool!
+}
+
+type Pool @entity {
+  id: ID!
+  addressProviderId: BigInt!
+  protocol: Protocol!
+  pool: Bytes
+  poolCollateralManager: Bytes
+  poolConfiguratorImpl: Bytes
+  poolImpl: Bytes
+  poolConfigurator: Bytes
+  proxyPriceProvider: Bytes
+  lastUpdateTimestamp: Int!
+
+  bridgeProtocolFee: BigInt
+  flashloanPremiumTotal: BigInt
+  flashloanPremiumToProtocol: BigInt
+
+  reserves: [Reserve!]! @derivedFrom(field: "pool")
+  supplyHistory: [Supply!]! @derivedFrom(field: "pool")
+  mintUnbackedHistory: [MintUnbacked!]! @derivedFrom(field: "pool")
+  backUnbackedHistory: [BackUnbacked!]! @derivedFrom(field: "pool")
+  mintedToTreasuryHistory: [MintedToTreasury!]! @derivedFrom(field: "pool")
+  isolationModeTotalDebtUpdatedHistory: [IsolationModeTotalDebtUpdated!]!
+    @derivedFrom(field: "pool")
+  redeemUnderlyingHistory: [RedeemUnderlying!]! @derivedFrom(field: "pool")
+  borrowHistory: [Borrow!]! @derivedFrom(field: "pool")
+  swapHistory: [SwapBorrowRate!]! @derivedFrom(field: "pool")
+  usageAsCollateralHistory: [UsageAsCollateral!]! @derivedFrom(field: "pool")
+  rebalanceStableBorrowRateHistory: [RebalanceStableBorrowRate!]! @derivedFrom(field: "pool")
+  repayHistory: [Repay!]! @derivedFrom(field: "pool")
+  flashLoanHistory: [FlashLoan!]! @derivedFrom(field: "pool")
+  liquidationCallHistory: [LiquidationCall!]! @derivedFrom(field: "pool")
+  active: Boolean!
+  paused: Boolean!
+}
+
+
+interface UserTransaction {
+  id: ID!
+  txHash: Bytes!
+  action: Action!
+  pool: Pool!
+  user: User!
+  timestamp: Int!
+}
+
+type Supply implements UserTransaction @entity {
+  """
+  tx hash
+  """
+  id: ID!
+  txHash: Bytes!
+  action: Action!
+  pool: Pool!
+  user: User!
+  caller: User!
+  reserve: Reserve!
+  referrer: Referrer
+  userReserve: UserReserve!
+  amount: BigInt!
+  timestamp: Int!
+  assetPriceUSD: BigDecimal!
+}
+
+type SwapBorrowRate implements UserTransaction @entity {
+  """
+  tx hash
+  """
+  id: ID!
+  txHash: Bytes!
+  action: Action!
+  pool: Pool!
+  user: User!
+  reserve: Reserve!
+  userReserve: UserReserve!
+  borrowRateModeFrom: Int!
+  borrowRateModeTo: Int!
+  stableBorrowRate: BigInt!
+  variableBorrowRate: BigInt!
+  timestamp: Int!
+}
+
+type Repay implements UserTransaction @entity {
+  """
+  tx hash
+  """
+  id: ID!
+  txHash: Bytes!
+  action: Action!
+  pool: Pool!
+  user: User!
+  repayer: User!
+  reserve: Reserve!
+  userReserve: UserReserve!
+  amount: BigInt!
+  timestamp: Int!
+  useATokens: Boolean!
+  assetPriceUSD: BigDecimal!
+}
+
+type FlashLoan @entity {
+  """
+  tx hash
+  """ #
+  id: ID!
+  pool: Pool!
+  reserve: Reserve!
+  target: Bytes!
+  amount: BigInt!
+  totalFee: BigInt!
+  lpFee: BigInt!
+  protocolFee: BigInt!
+  #protocolFee: BigInt!
+  initiator: User!
+  timestamp: Int!
+}
+
+type LiquidationCall implements UserTransaction @entity {
+  """
+  tx hash
+  """ #
+  id: ID!
+  txHash: Bytes!
+  action: Action!
+  pool: Pool!
+  user: User!
+  collateralReserve: Reserve!
+  collateralUserReserve: UserReserve!
+  collateralAmount: BigInt!
+  principalReserve: Reserve!
+  principalUserReserve: UserReserve!
+  principalAmount: BigInt!
+  liquidator: Bytes!
+  timestamp: Int!
+  collateralAssetPriceUSD: BigDecimal!
+  borrowAssetPriceUSD: BigDecimal!
+}
+
+type UserReward @entity {
+  """
+  id: ic:asset:reward:user
+  """
+  id: ID!
+  user: User!
+  index: BigInt!
+  reward: Reward!
+  createdAt: Int!
+  updatedAt: Int!
+}
+
+type User @entity {
+  """
+  user address
+  """
+  id: ID!
+  borrowedReservesCount: Int!
+
+  #rewards
+  unclaimedRewards: BigInt!
+  lifetimeRewards: BigInt!
+  rewardsLastUpdated: Int!
+  rewards: [UserReward!]! @derivedFrom(field: "user")
+
+  #emode
+  eModeCategoryId: EModeCategory
+
+  reserves: [UserReserve!]! @derivedFrom(field: "user")
+  supplyHistory: [Supply!]! @derivedFrom(field: "user")
+  mintUnbackedHistory: [MintUnbacked!]! @derivedFrom(field: "user")
+  backUnbackedHistory: [BackUnbacked!]! @derivedFrom(field: "backer")
+  userEmodeSetHistory: [UserEModeSet!]! @derivedFrom(field: "user")
+  redeemUnderlyingHistory: [RedeemUnderlying!]! @derivedFrom(field: "user")
+  usageAsCollateralHistory: [UsageAsCollateral!]! @derivedFrom(field: "user")
+  borrowHistory: [Borrow!]! @derivedFrom(field: "user")
+  swapHistory: [SwapBorrowRate!]! @derivedFrom(field: "user")
+  rebalanceStableBorrowRateHistory: [RebalanceStableBorrowRate!]! @derivedFrom(field: "user")
+  repayHistory: [Repay!]! @derivedFrom(field: "user")
+  liquidationCallHistory: [LiquidationCall!]! @derivedFrom(field: "user")
+  rewardedActions: [RewardedAction!]! @derivedFrom(field: "user")
+  claimRewards: [ClaimRewardsCall!]! @derivedFrom(field: "user")
+}
+
+type SwapHistory @entity {
+  """
+  tx hash
+  """
+  id: ID!
+  fromAsset: String!
+  toAsset: String!
+  fromAmount: BigInt!
+  receivedAmount: BigInt!
+  swapType: String!
+}''',
+  
 }
