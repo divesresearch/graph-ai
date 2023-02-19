@@ -45,8 +45,9 @@ if user_input:
             response += message
             prev_text = data["message"]
 
-    st.text(response[:100])
-    query = response[response.find('{'), response.rfind('}')]
+    st.text(response)
+    query = response[response.find('{'): response.rfind('}') + 1]
+    st.text(query)
 
     with st.spinner(text='Sending the request...'):
         results = post_query(URLS[protocol], query)
