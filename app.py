@@ -7,6 +7,8 @@ from utils.prompts import protocol_selection_prompt, query_prompt
 from utils.urls import URLS
 from utils.schemas import SCHEMAS
 
+IMAGE = "https://raw.githubusercontent.com/divesresearch/graph-ai/master/GraphAI-logo.png?token=GHSAT0AAAAAAB3IGMUCZ3NHI477XFDXSRBGY7SLAOA"
+
 st.set_page_config(layout="wide")
 access_token = st.secrets['chatbot']['TOKEN']
 
@@ -21,6 +23,10 @@ def increment_counter():
 
 def reset_increment():
     st.session_state.count = 0
+
+a, b = st.columns([1,9])
+a.image(IMAGE, width=110)
+b.title("Graph AI\nEasy access to The Graph, powered by AI.")
 
 col1, col2 = st.columns([4,6])
 with col1:
