@@ -12,17 +12,23 @@ IMAGE = "https://raw.githubusercontent.com/divesresearch/graph-ai/master/GraphAI
 st.set_page_config(layout="wide")
 access_token = st.secrets['chatbot']['TOKEN']
 
-if 'count' not in st.session_state:
-    st.session_state.count = 0
+if 'protocol' not in st.session_state:
+    st.session_state.protocol = ''
+
+if 'query' not in st.session_state:
+    st.session_state.query = ''
 
 if 'df' not in st.session_state:
     st.session_state.df = pd.DataFrame()
 
-def increment_counter():
-    st.session_state.count += 1
+if 'df_exists' not in st.session_state:
+    st.session_state.df_exists = False
 
-def reset_increment():
-    st.session_state.count = 0
+def reset_data():
+    st.session_state.protocol = ''
+    st.session_state.query = ''
+    st.session_state.df = pd.DataFrame()
+    st.session_state.df_exists = False
 
 a, b = st.columns([1,9])
 a.image(IMAGE, width=110)
@@ -44,13 +50,13 @@ with col1:
 with col2:
     with st.form(key='query_form'):
         user_input = st.text_input("What do you want?", input_example)
-        submit_button_1 = st.form_submit_button(label='Submit', on_click=reset_increment)
+        submit_button_1 = st.form_submit_button(label='Submit', on_click=reset_data)
 
-if st.session_state.count != 0 or (user_input and submit_button_1):
-    if st.session_state.count == 0:
-        chatbot = Chatbot(config={
-            "access_token": access_token
-        })
+if st.session_state.df_exists or (user_input and submit_button_1):
+    chatbot = Chatbot(config={
+        "access_token": access_token
+    })
+    if not st.session_state.protocol:
         with st.spinner(text='Detecting the protocol...'):
             protocol = ''
             prev_text = ""
@@ -63,45 +69,48 @@ if st.session_state.count != 0 or (user_input and submit_button_1):
 
         for char in string.punctuation:
             protocol = protocol.replace(char, '')
-        protocol = protocol.lower()
 
-        schema = SCHEMAS[protocol]
+        st.session_state.protocol = protocol.lower()
 
-        chatbot = Chatbot(config={
-            "access_token": access_token
-        })
+    schema = SCHEMAS[st.session_state.protocol]
+
+    chatbot = Chatbot(config={
+        "access_token": access_token
+    })
+    if not st.session_state.query:
         with st.spinner(text='Writing the query...'):
-            response = ''
+            query = ''
             prev_text = ""
             for data in chatbot.ask(
-                query_prompt%(protocol, user_input, schema)
+                query_prompt%(st.session_state.protocol, user_input, schema)
             ):
                 message = data["message"][len(prev_text):]
-                response += message
+                query += message
                 prev_text = data["message"]
 
-        query = response[response.find('{'): response.rfind('}') + 1]
-        with st.expander(':scroll: Query'):
-            st.text(query)
+        st.session_state.query = query[query.find('{'): query.rfind('}') + 1]
+    with st.expander(':scroll: Query'):
+        st.text(st.session_state.query)
 
+    if not st.session_state.df_exists:
         with st.spinner(text='Sending the request...'):
-            results = post_query(URLS[protocol], query)
+            results = post_query(URLS[st.session_state.protocol], st.session_state.query)
             if 'data' in results:
                 for key, value in results['data'].items():
-                    df = pd.DataFrame(parse_results(value))
-                    st.session_state.df = df
+                    st.session_state.df = pd.DataFrame(parse_results(value))
+                st.session_state.df_exists = True
             else:
                 st.text(results)
 
-        with st.expander(':scroll: Dataframe', expanded=True):
-            st.dataframe(df)
+    with st.expander(':scroll: Dataframe', expanded=True):
+        st.dataframe(st.session_state.df)
 
     with st.form(key='chart_form'):
         a, b, c = st.columns([4, 5, 5])
         chart_types = ['Line chart', 'Bar chart']
         chart_type = a.radio('Select one of the following chart types:', chart_types)
         columns = b.multiselect('Select the columns for your plot:', st.session_state.df.columns)
-        submit_button_2 = st.form_submit_button(label='Submit',on_click=increment_counter)
+        submit_button_2 = st.form_submit_button(label='Submit')
 
     if submit_button_2:
         if columns[0].lower() == 'timestamp':
