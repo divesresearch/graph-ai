@@ -50,7 +50,10 @@ with col1:
 with col2:
     with st.form(key='query_form'):
         user_input = st.text_input("What do you want?", input_example)
-        submit_button_1 = st.form_submit_button(label='Submit', on_click=reset_data)
+        submit_button_1 = st.form_submit_button(
+            label='Submit',
+            on_click=reset_data
+        )
 
 if st.session_state.df_exists or (user_input and submit_button_1):
     chatbot = Chatbot(config={
@@ -58,14 +61,9 @@ if st.session_state.df_exists or (user_input and submit_button_1):
     })
     if not st.session_state.protocol:
         with st.spinner(text='Detecting the protocol...'):
-            protocol = ''
-            prev_text = ""
-            for data in chatbot.ask(
+            protocol = list(chatbot.ask(
                 protocol_selection_prompt%(user_input)
-            ):
-                message = data["message"][len(prev_text) :]
-                protocol += message
-                prev_text = data["message"]
+            ))[-1]['message']
 
         for char in string.punctuation:
             protocol = protocol.replace(char, '')
@@ -79,14 +77,9 @@ if st.session_state.df_exists or (user_input and submit_button_1):
     })
     if not st.session_state.query:
         with st.spinner(text='Writing the query...'):
-            query = ''
-            prev_text = ""
-            for data in chatbot.ask(
+            query = list(chatbot.ask(
                 query_prompt%(st.session_state.protocol, user_input, schema)
-            ):
-                message = data["message"][len(prev_text):]
-                query += message
-                prev_text = data["message"]
+            ))[-1]['message']
 
         st.session_state.query = query[query.find('{'): query.rfind('}') + 1]
     with st.expander(':scroll: Query'):
@@ -94,7 +87,10 @@ if st.session_state.df_exists or (user_input and submit_button_1):
 
     if not st.session_state.df_exists:
         with st.spinner(text='Sending the request...'):
-            results = post_query(URLS[st.session_state.protocol], st.session_state.query)
+            results = post_query(
+                URLS[st.session_state.protocol],
+                st.session_state.query
+                )
             if 'data' in results:
                 for key, value in results['data'].items():
                     st.session_state.df = pd.DataFrame(parse_results(value))
